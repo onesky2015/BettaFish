@@ -1,7 +1,7 @@
 """
 Flask主应用 - 统一管理三个Streamlit应用
 """
-
+import gradio as gr   #新增graio入口
 import os
 import sys
 import subprocess
@@ -9,7 +9,8 @@ import time
 import threading
 from datetime import datetime
 from queue import Queue
-from flask import Flask, render_template, request, jsonify, Response
+from flask import render_template, request, jsonify, Response
+#from flask import Flask
 from flask_socketio import SocketIO, emit
 import atexit
 import requests
@@ -1017,16 +1018,33 @@ def handle_status_request():
         for app_name, info in processes.items()
     })
 
-if __name__ == '__main__':
-    HOST = '0.0.0.0'
-    PORT = 5000
-    logger.info("等待配置确认，系统将在前端指令后启动组件...")
-    logger.info(f"Flask服务器已启动，访问地址: http://{HOST}:{PORT}")
-    
-    try:
-        socketio.run(app, host=HOST, port=PORT, debug=False)
-    except KeyboardInterrupt:
-        logger.info("\n正在关闭应用...")
-        cleanup_processes()
+# ==== Hugging Face Gradio Space 入口（替换原 Flask/SocketIO 启动）====
+import gradio as gr
+
+INTRO = (
+    "✅ BettaFish 测试版（运行于 Hugging Face Space）\n\n"
+    "当前仅启动最小界面以验证部署；暂未连接数据库、SocketIO 或外部任务。\n"
+    "如需恢复原 Flask/SocketIO，请在本地或自有服务器运行。"
+)
+
+def _demo_predict(text: str):
+    if not text:
+        return "请输入内容后再试。"
+    # TODO：如需接入真实处理流程，可在此调用你已有的函数
+    # 例如：result = run_pipeline(text)
+    # return result
+    return f"BettaFish 收到：{text}\n（此处返回实际处理结果）"
+
+with gr.Blocks(title="BettaFish • Demo") as demo:
+    gr.Markdown("# BettaFish 舆情分析系统（测试版）")
+    gr.Markdown(INTRO)
+    inp = gr.Textbox(label="输入文本", placeholder="请输入要分析的内容…", lines=3)
+    btn = gr.Button("开始分析")
+    out = gr.Textbox(label="分析结果", lines=8)
+    btn.click(fn=_demo_predict, inputs=inp, outputs=out)
+
+if __name__ == "__main__":
+    demo.queue().launch()
+
         
     
